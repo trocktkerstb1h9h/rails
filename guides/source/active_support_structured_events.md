@@ -462,20 +462,14 @@ Rails emits structured events across the framework covering controllers, jobs, d
 | `:job_class`    | Job class name               |
 | `:job_id`       | Job ID                       |
 | `:queue`        | Queue name                   |
-| `:scheduled_at` | Time the job was scheduled   |
+| `:adapter`        | QueueAdapter object processing the job |
+| `:aborted`        | Whether this job was aborted |
+| `:exception_class`   | The class of the exception if present |
+| `:exception_message` | The message of the exception if present |
+| `:arguments`         | Arguments passed to the job if `log_arguments` is enabled |
 
-#### `active_job.enqueue_failed`
 
-| Key                  | Value                        |
-| -------------------- | ---------------------------- |
-| `:job_class`         | Job class name               |
-| `:job_id`            | Job ID                       |
-| `:queue`             | Queue name                   |
-| `:exception_class`   | The class of the exception   |
-| `:exception_message` | The message of the exception |
-| `:scheduled_at`      | Time the job was scheduled   |
-
-#### `active_job.enqueue_aborted`
+#### `active_job.enqueue_at`
 
 | Key                  | Value                        |
 | -------------------- | ---------------------------- |
@@ -483,6 +477,49 @@ Rails emits structured events across the framework covering controllers, jobs, d
 | `:job_id`            | Job ID                       |
 | `:queue`             | Queue name                   |
 | `:scheduled_at`      | Time the job was scheduled   |
+| `:adapter`        | QueueAdapter object processing the job |
+| `:aborted`        | Whether this job was aborted |
+| `:exception_class`   | The class of the exception if present |
+| `:exception_message` | The message of the exception if present |
+| `:arguments`         | Arguments passed to the job if `log_arguments` is enabled |
+
+
+#### `active_job.bulk_enqueued`
+
+| Key                      | Value                                  |
+| ------------------------ | -------------------------------------- |
+| `:adapter`               | QueueAdapter object processing the job |
+| `:job_count`             | Total number of jobs enqueued          |
+| `:enqueued_count`        | Count of successfully enqueued jobs    |
+| `:failed_enqueue_count`  | Count of jobs that failed to enqueue   |
+| `:enqueued_classes`      | Array of job class names               |
+
+
+#### `active_job.started`
+
+| Key            | Value                     |
+| -------------  | ------------------------- |
+| `:job_class`   | Job class name            |
+| `:job_id`      | Job ID                    |
+| `:queue`       | Queue name                |
+| `:enqueued_at` | Time the job was enqueued |
+| `:arguments`   | Arguments passed to the job if `log_arguments` is enabled |
+
+
+#### `active_job.completed`
+
+| Key            | Value          |
+| -------------- | -------------- |
+| `:job_class`   | Job class name |
+| `:job_id`      | Job ID         |
+| `:queue`       | Queue name     |
+| `:adapter`     | QueueAdapter object processing the job |
+| `:aborted`     | Whether this job was aborted |
+| `:duration`    | Duration in ms |
+| `:exception_class`   | The class of the exception if present |
+| `:exception_message` | The message of the exception if present |
+| `:exception_backtrace` | The backtrace of the exception if present |
+
 
 #### `active_job.retry_scheduled`
 
@@ -495,6 +532,7 @@ Rails emits structured events across the framework covering controllers, jobs, d
 | `:exception_class`   | The class of the exception   |
 | `:exception_message` | The message of the exception |
 
+
 #### `active_job.retry_stopped`
 
 | Key                  | Value                        |
@@ -505,53 +543,6 @@ Rails emits structured events across the framework covering controllers, jobs, d
 | `:exception_class`   | The class of the exception   |
 | `:exception_message` | The message of the exception |
 
-#### `active_job.bulk_enqueued`
-
-| Key               | Value                                  |
-| ----------------- | -------------------------------------- |
-| `:adapter`        | QueueAdapter object processing the job |
-| `:total_jobs`     | Total number of jobs enqueued          |
-| `:enqueued_count` | Count of successfully enqueued jobs    |
-| `:failed_count`   | Count of jobs that failed to enqueue   |
-| `:job_classes`    | Array of job class names               |
-
-#### `active_job.started`
-
-| Key            | Value                     |
-| -------------  | ------------------------- |
-| `:job_class`   | Job class name            |
-| `:job_id`      | Job ID                    |
-| `:queue`       | Queue name                |
-| `:enqueued_at` | Time the job was enqueued |
-
-#### `active_job.completed`
-
-| Key            | Value          |
-| -------------- | -------------- |
-| `:job_class`   | Job class name |
-| `:job_id`      | Job ID         |
-| `:queue`       | Queue name     |
-| `:duration_ms` | Duration in ms |
-
-#### `active_job.failed`
-
-| Key                  | Value                        |
-| -------------------- | ---------------------------- |
-| `:job_class`         | Job class name               |
-| `:job_id`            | Job ID                       |
-| `:queue`             | Queue name                   |
-| `:duration_ms`       | Duration in ms               |
-| `:exception_class`   | The class of the exception   |
-| `:exception_message` | The message of the exception |
-
-#### `active_job.aborted`
-
-| Key            | Value          |
-| -------------- | -------------- |
-| `:job_class`   | Job class name |
-| `:job_id`      | Job ID         |
-| `:queue`       | Queue name     |
-| `:duration_ms` | Duration in ms |
 
 #### `active_job.discarded`
 
@@ -562,6 +553,7 @@ Rails emits structured events across the framework covering controllers, jobs, d
 | `:exception_class`   | The class of the exception   |
 | `:exception_message` | The message of the exception |
 
+
 #### `active_job.interrupt`
 
 | Key            | Value                        |
@@ -570,6 +562,7 @@ Rails emits structured events across the framework covering controllers, jobs, d
 | `:job_id`      | Job ID                       |
 | `:description` | Description of the interrupt |
 | `:reason`      | Reason for the interrupt     |
+
 
 #### `active_job.resume`
 
@@ -587,15 +580,6 @@ Rails emits structured events across the framework covering controllers, jobs, d
 | `:job_id`    | Job ID                         |
 | `:step`      | Name of the step being skipped |
 
-#### `active_job.step_resumed`
-
-| Key          | Value                            |
-| ------------ | -------------------------------- |
-| `:job_class` | Job class name                   |
-| `:job_id`    | Job ID                           |
-| `:step`      | Name of the step being skipped   |
-| `:cursor`    | Cursor at which the step resumes |
-
 #### `active_job.step_started`
 
 | Key          | Value                            |
@@ -603,28 +587,9 @@ Rails emits structured events across the framework covering controllers, jobs, d
 | `:job_class` | Job class name                   |
 | `:job_id`    | Job ID                           |
 | `:step`      | Name of the step being skipped   |
-
-#### `active_job.step_interrupted`
-
-| Key          | Value                            |
-| ------------ | -------------------------------- |
-| `:job_class` | Job class name                   |
-| `:job_id`    | Job ID                           |
-| `:step`      | Name of the step being skipped   |
 | `:cursor`    | Cursor at which the step resumes |
-| `:duration`  | Duration in ms                   |
+| `:resumed`   | Whether the step is resuming     |
 
-#### `active_job.step_errored`
-
-| Key                  | Value                            |
-| -------------------- | -------------------------------- |
-| `:job_class`         | Job class name                   |
-| `:job_id`            | Job ID                           |
-| `:step`              | Name of the step being skipped   |
-| `:cursor`            | Cursor at which the step resumes |
-| `:duration`          | Duration in ms                   |
-| `:exception_class`   | The class of the exception       |
-| `:exception_message` | The message of the exception     |
 
 #### `active_job.step`
 
@@ -633,7 +598,10 @@ Rails emits structured events across the framework covering controllers, jobs, d
 | `:job_class`         | Job class name                   |
 | `:job_id`            | Job ID                           |
 | `:step`              | Name of the step being skipped   |
+| `:interrupted`       | Whether the step was interrupted |
 | `:duration`          | Duration in ms                   |
+| `:exception_class`   | The class of the exception if present   |
+| `:exception_message` | The message of the exception if present |
 
 
 ### Active Record
